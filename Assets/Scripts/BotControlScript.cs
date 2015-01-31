@@ -87,8 +87,10 @@ public class BotControlScript : MonoBehaviour
 			wrench = GameObject.Find("wrench").transform;
 			//Debug.Log (wrench);
 			if(anim.GetBool("equipped") == false){
-				if(Vector3.Distance(transform.position, wrench.position) < 1)
-				anim.SetBool("pick_up", true);
+				if(Vector3.Distance(transform.position, wrench.position) < 1){
+					anim.SetBool("pick_up", true);
+
+				}
 			}
 			else{
 
@@ -131,6 +133,7 @@ public class BotControlScript : MonoBehaviour
 				.transform.FindChild("RightHandIndex1");
 			wrench.localPosition = new Vector3(0.019f, -0.032f, 0.15f);
 			wrench.localRotation = Quaternion.identity;
+
 		}
 		// if we are in the jumping state... 
 		else if(currentBaseState.nameHash == jumpState)
