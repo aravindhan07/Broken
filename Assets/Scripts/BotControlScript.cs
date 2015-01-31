@@ -22,7 +22,7 @@ public class BotControlScript : MonoBehaviour
 	private AnimatorStateInfo currentBaseState;			// a reference to the current state of the animator, used for base layer
 	private AnimatorStateInfo layer2CurrentState;	// a reference to the current state of the animator, used for layer 2
 	private CapsuleCollider col;					// a reference to the capsule collider of the character
-	
+	Transform wrench;
 
 	static int idleState = Animator.StringToHash("Base Layer.Idle");	
 	static int locoState = Animator.StringToHash("Base Layer.Locomotion");			// these integers are references to our animator's states
@@ -33,15 +33,16 @@ public class BotControlScript : MonoBehaviour
 	static int runAttackState = Animator.StringToHash("Base Layer.Run_Attack");
 	static int attackState = Animator.StringToHash("Base Layer.Attack");
 	static int waveState = Animator.StringToHash("Layer2.Wave");
+	static int pickupState = Animator.StringToHash("Base Layer.pick_up");
 
 	void Start ()
 	{
 		// initialising reference variables
 		anim = GetComponent<Animator>();					  
 		col = GetComponent<CapsuleCollider>();				
-		enemy = GameObject.Find("Enemy").transform;	
 		if(anim.layerCount ==2)
 			anim.SetLayerWeight(1, 1);
+
 	}
 	
 	
@@ -54,7 +55,7 @@ public class BotControlScript : MonoBehaviour
 		anim.speed = animSpeed;								// set the speed of our animator to the public variable 'animSpeed'
 		anim.SetLookAtWeight(lookWeight);					// set the Look At Weight - amount to use look at IK vs using the head's animation
 		currentBaseState = anim.GetCurrentAnimatorStateInfo(0);	// set our currentState variable to the current state of the Base Layer (0) of animation
-		
+
 		if(anim.layerCount ==2)		
 			layer2CurrentState = anim.GetCurrentAnimatorStateInfo(1);	// set our layer2CurrentState variable to the current state of the second Layer (1) of animation
 
@@ -83,8 +84,18 @@ public class BotControlScript : MonoBehaviour
 		// if we hold Alt..
 		if(Input.GetButton("Fire2"))
 		{
+			wrench = GameObject.Find("wrench").transform;
+			//Debug.Log (wrench);
+			if(anim.GetBool("equipped") == false){
+				if(Vector3.Distance(transform.position, wrench.position) < 1)
+				anim.SetBool("pick_up", true);
+			}
+			else{
+
+			}
+
 			// ...set a position to look at with the head, and use Lerp to smooth the look weight from animation to IK (see line 54)
-			anim.SetLookAtPosition(enemy.position);
+		//	anim.SetLookAtPosition(enemy.position);
 			lookWeight = Mathf.Lerp(lookWeight,1f,Time.deltaTime*lookSmoother);
 		}
 		// else, return to using animation for the head by lerping back to 0 for look at weight
@@ -96,19 +107,31 @@ public class BotControlScript : MonoBehaviour
 		// STANDARD JUMPING
 		
 		// if we are currently in a state called Locomotion (see line 25), then allow Jump input (Space) to set the Jump bool parameter in the Animator to true
-		if (currentBaseState.nameHash == locoState)
-		{
-			if(Input.GetButtonDown("Jump"))
-			{
-				anim.SetBool("Jump", true);
-			}
+		if (currentBaseState.nameHash == locoState) {
+						if (Input.GetButtonDown ("Jump")) {
+								anim.SetBool ("Jump", true);
+						}
 
-			if(Input.GetButtonDown("Fire1"))
-			{
-				anim.SetBool("Attack", true);
-			}
+						if (Input.GetButtonDown ("Fire1")) {
+								anim.SetBool ("Attack", true);
+						}
+				} 
+		else if (currentBaseState.nameHash == pickupState) {
+			anim.SetBool("pick_up", false);
+			anim.SetBool("equipped", true);
+			wrench = GameObject.Find("wrench").transform;
+			wrench.parent = transform.FindChild("Hips")
+				.transform.FindChild("Spine")
+				.transform.FindChild("Spine1")
+				.transform.FindChild("Spine2")
+				.transform.FindChild("RightShoulder")
+				.transform.FindChild("RightArm")
+				.transform.FindChild("RightForeArm")
+				.transform.FindChild("RightHand")
+				.transform.FindChild("RightHandIndex1");
+			wrench.localPosition = new Vector3(0.019f, -0.032f, 0.15f);
+			wrench.localRotation = Quaternion.identity;
 		}
-		
 		// if we are in the jumping state... 
 		else if(currentBaseState.nameHash == jumpState)
 		{
