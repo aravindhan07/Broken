@@ -16,19 +16,21 @@ public class AnimTriggers : MonoBehaviour
 	// check for colliders with a Trigger collider
 	// if we are entering something called JumpTrigger, set a bool parameter called JumpDown to true..
 	void OnTriggerEnter(Collider col)
-	{
-		if(col.gameObject.name == "JumpTrigger")
+	{	
+
+
+		if(col.gameObject.name == "wrench" && animator.GetBool("interact"))
 		{
-			animator.SetBool("JumpDown", true);	
+			animator.SetBool("pick_up", true);	
 		}
 	}
 	
 	// ..and when leaving the trigger, reset it to false
 	void OnTriggerExit(Collider col)
 	{
-		if(col.gameObject.name == "JumpTrigger")
+		if(col.gameObject.name == "wrench")
 		{
-			animator.SetBool("JumpDown", false);
+			animator.SetBool("pick_up", false);
 		}
 	}
 }

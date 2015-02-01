@@ -22,7 +22,7 @@ public class BotControlScript : MonoBehaviour
 	private AnimatorStateInfo currentBaseState;			// a reference to the current state of the animator, used for base layer
 	private AnimatorStateInfo layer2CurrentState;	// a reference to the current state of the animator, used for layer 2
 	private CapsuleCollider col;					// a reference to the capsule collider of the character
-	
+	GameObject wrench;
 
 	static int idleState = Animator.StringToHash("Base Layer.Idle");	
 	static int locoState = Animator.StringToHash("Base Layer.Locomotion");			// these integers are references to our animator's states
@@ -33,15 +33,18 @@ public class BotControlScript : MonoBehaviour
 	static int runAttackState = Animator.StringToHash("Base Layer.Run_Attack");
 	static int attackState = Animator.StringToHash("Base Layer.Attack");
 	static int waveState = Animator.StringToHash("Layer2.Wave");
-
+	static int pickupState = Animator.StringToHash("Base Layer.pick_up");
+	static int backflipState = Animator.StringToHash("Base Layer.back_flip");
+	static int walkbackState = Animator.StringToHash("Base Layer.WalkBack");
+	static float delta;
 	void Start ()
 	{
 		// initialising reference variables
 		anim = GetComponent<Animator>();					  
 		col = GetComponent<CapsuleCollider>();				
-		enemy = GameObject.Find("Enemy").transform;	
 		if(anim.layerCount ==2)
 			anim.SetLayerWeight(1, 1);
+		delta = 10f;
 	}
 	
 
@@ -54,7 +57,7 @@ public class BotControlScript : MonoBehaviour
 		anim.speed = animSpeed;								// set the speed of our animator to the public variable 'animSpeed'
 		anim.SetLookAtWeight(lookWeight);					// set the Look At Weight - amount to use look at IK vs using the head's animation
 		currentBaseState = anim.GetCurrentAnimatorStateInfo(0);	// set our currentState variable to the current state of the Base Layer (0) of animation
-		
+
 		if(anim.layerCount ==2)		
 			layer2CurrentState = anim.GetCurrentAnimatorStateInfo(1);	// set our layer2CurrentState variable to the current state of the second Layer (1) of animation
 
@@ -83,8 +86,26 @@ public class BotControlScript : MonoBehaviour
 		// if we hold Alt..
 		if(Input.GetButton("Fire2"))
 		{
+			wrench = GameObject.Find("wrench");
+			if(anim.GetBool("equipped") == false &&(Time.time - delta) >= 1f){
+				if(Vector3.Distance(transform.position, wrench.transform.position) < 1.5f){
+					anim.SetBool("pick_up", true);
+					Rigidbody wbody = wrench.transform.GetComponent<Rigidbody>();
+					GameObject.Destroy(wbody);
+					delta = Time.time;
+				}
+			}
+			else if((Time.time - delta) >= 1f){
+				wrench.AddComponent<Rigidbody>();
+				Rigidbody wbody = wrench.transform.GetComponent<Rigidbody>();
+				wbody.useGravity = true;
+				wrench.transform.parent = null;
+				anim.SetBool("equipped", false);
+				delta = Time.time;
+			}
+
 			// ...set a position to look at with the head, and use Lerp to smooth the look weight from animation to IK (see line 54)
-			anim.SetLookAtPosition(enemy.position);
+		//	anim.SetLookAtPosition(enemy.position);
 			lookWeight = Mathf.Lerp(lookWeight,1f,Time.deltaTime*lookSmoother);
 		}
 		// else, return to using animation for the head by lerping back to 0 for look at weight
@@ -94,21 +115,41 @@ public class BotControlScript : MonoBehaviour
 		}
 
 		// STANDARD JUMPING
-		
-		// if we are currently in a state called Locomotion (see line 25), then allow Jump input (Space) to set the Jump bool parameter in the Animator to true
-		if (currentBaseState.nameHash == locoState)
-		{
-			if(Input.GetButtonDown("Jump"))
-			{
-				anim.SetBool("Jump", true);
-			}
-
-			if(Input.GetButtonDown("Fire1"))
-			{
-				anim.SetBool("Attack", true);
+		if (currentBaseState.nameHash == walkbackState) {
+			if (Input.GetButtonDown ("Jump")) {
+				anim.SetBool ("Jump", true);
 			}
 		}
-		
+		if (currentBaseState.nameHash == backflipState) {
+			anim.SetBool ("Jump", false);
+		}
+		// if we are currently in a state called Locomotion (see line 25), then allow Jump input (Space) to set the Jump bool parameter in the Animator to true
+		if (currentBaseState.nameHash == locoState) {
+						if (Input.GetButtonDown ("Jump")) {
+								anim.SetBool ("Jump", true);
+						}
+
+						if (Input.GetButtonDown ("Fire1")) {
+								anim.SetBool ("Attack", true);
+						}
+		} 
+		else if (currentBaseState.nameHash == pickupState) {
+			anim.SetBool("pick_up", false);
+			anim.SetBool("equipped", true);
+			wrench = GameObject.Find("wrench");
+			wrench.transform.parent = transform.FindChild("Hips")
+				.transform.FindChild("Spine")
+				.transform.FindChild("Spine1")
+				.transform.FindChild("Spine2")
+				.transform.FindChild("RightShoulder")
+				.transform.FindChild("RightArm")
+				.transform.FindChild("RightForeArm")
+				.transform.FindChild("RightHand")
+				.transform.FindChild("RightHandIndex1");
+			wrench.transform.localPosition = new Vector3(0.019f, -0.032f, 0.15f);
+			wrench.transform.localRotation = Quaternion.identity;
+
+		}
 		// if we are in the jumping state... 
 		else if(currentBaseState.nameHash == jumpState)
 		{
@@ -118,11 +159,11 @@ public class BotControlScript : MonoBehaviour
 				if(useCurves)
 					// ..set the collider height to a float curve in the clip called ColliderHeight
 					col.height = anim.GetFloat("ColliderHeight");
-				
+
 				// reset the Jump bool so we can jump again, and so that the state does not loop 
 				anim.SetBool("Jump", false);
 			}
-			
+
 			// Raycast down from the center of the character.. 
 			Ray ray = new Ray(transform.position + Vector3.up, -Vector3.up);
 			RaycastHit hitInfo = new RaycastHit();
