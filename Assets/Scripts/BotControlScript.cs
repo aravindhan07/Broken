@@ -44,7 +44,7 @@ public class BotControlScript : MonoBehaviour
 			anim.SetLayerWeight(1, 1);
 	}
 	
-	
+
 	void FixedUpdate ()
 	{
 		float h = Input.GetAxis("Horizontal");				// setup h variable as our horizontal input axis
